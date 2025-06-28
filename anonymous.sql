@@ -1,12 +1,3 @@
-SELECT *
-FROM anon;
-
-SELECT date_published
-FROM anon;
-
-SELECT count(*)
-FROM anon;
-
 SELECT
   source,
   count(source)
@@ -34,9 +25,6 @@ FROM anon
 ORDER BY date_published
   DESC
 LIMIT 100;
-
-DELETE FROM anon
-WHERE content NOT LIKE "%<b>%";
 
 CREATE TABLE anon (
   source,
@@ -133,13 +121,6 @@ SELECT
 FROM anon
 GROUP BY source, title;
 
-SELECT link
-FROM anon
-WHERE date_published = '2016-06-20';
-
-SELECT *
-FROM anon;
-
 SELECT
   anon.source,
   outlets.name,
@@ -153,7 +134,6 @@ FROM anon
 ORDER BY date_published
   DESC
 LIMIT 100, 10;
-
 
 SELECT count(*)
 FROM anon
