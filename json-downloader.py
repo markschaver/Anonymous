@@ -29,6 +29,7 @@ today = date.today()
 phrases = open("phrases.txt")
 print("Opening phrases...")
 
+
 def encode_phrase(unencoded_phrase):
     unencoded_phrase = unencoded_phrase.strip()
     encoded_phrase = parse.quote_plus(unencoded_phrase)
