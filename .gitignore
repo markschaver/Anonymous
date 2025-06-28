@@ -1,0 +1,18 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Files
+config.ini
+.DS_Store
+.git
+Anonymous.sublime-project
+Anonymous.sublime-workspace
+anon.db

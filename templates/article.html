@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-2W0Z918Q39"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-2W0Z918Q39');
+    </script>
+    <title>Anonymous Source Tracker | {{ masthead|safe }} | {{ results.title|safe }}</title>
+    <meta name="description" content="Anonymous Source Tracker: Examples of how major English-language news organizations use anonymous sources. Updated daily." />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='custom.css') }}">
+
+    <script src="{{ url_for('static', filename='bootstrap.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='jquery-3.3.1.slim.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='popper.min.js') }}"></script>
+
+</head>
+<body>
+    <div class="jumbotron">
+        <div class="container">
+        <h2><a href="{{ url_for('index') }}" id="masthed">Anonymous Source Tracker</a></h2>
+        <h1>{{ masthead|safe }}</h1>
+        </div>
+        <hr>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-12">
+                <b><a href="{{ results.link }}">{{ results.title|safe}}</a></b>
+                <hr>
+                {{ results.content|clean_content|safe }}
+                <br><br>
+                <div class="timestamp">{{ results.date_published | datetimeformat | safe }}</div>
+                <br>
+                <br>
+            </div>
+        </div><!-- row -->
+    </div> <!-- container -->
+</body>
+</html>
+
+
+

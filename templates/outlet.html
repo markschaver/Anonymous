@@ -1,0 +1,72 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-2W0Z918Q39"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-2W0Z918Q39');
+    </script>
+    <title>Anonymous Source Tracker | {{ masthead|safe }}</title>
+    <meta charset="utf-8">
+    <meta name="description" content="Anonymous Source Tracker: Daily examples of how major news organizations in the United States use anonymous sources" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='custom.css') }}">
+
+    <script src="{{ url_for('static', filename='bootstrap.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='jquery-3.3.1.slim.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='popper.min.js') }}"></script>
+
+</head>
+<body>
+    <div class="jumbotron">
+        <div class="container">
+        <h2><a href="/anonymous" id="masthed">Anonymous Source Tracker</a></h2>
+        <p><h1>{{ masthead|safe }}</h1></p>
+        </div>
+        <hr>
+    </div>
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-8">
+                {% for entry in entries %}
+                <b><a href="{{ entry.link }}">{{ entry.title|safe}}</a></b>
+                <hr>
+                {{ entry.content|clean_content|safe }}
+                <br><br>
+                    <div class="timestamp">{{ entry.name|safe }}&nbsp;&nbsp;&#x2219;&nbsp;&nbsp;{{ entry.date_published | datetimeformat | safe }}</div>
+                <br>
+                <br>
+                {% endfor %}
+                <div align="right">{{ pagination.links }}</div>
+            </div>
+            <div class="col-sm-4">
+                <h3>Media tracked</h3>
+                <ul>
+                {% for outlet in outlets %}
+                <li><a href="{{ url_for('outlet', outlet_name='%s' % (outlet.name|plus_for_spaces)) }}">{{ outlet.name|safe }}</a></li>
+                {% endfor %}
+                </ul>
+                <br>
+                <p><h3>Cautions</h3>
+                    <ul>
+                        <li>The tracker searches for commonly used phrases used to identify anonymous sources so misses anonymously sourced articles that do not use those phrases.</li>
+                        <li>Some matches are false and the article is not anonymously sourced.</li>
+                        <li>Some articles are duplicates because they appeared on multiple news sites. These are typically from wire services.</li>
+                        <li>Some articles are duplicates because they have different urls but come from the same news site.</li>
+                        <li>Some articles refer to anonymous sources but are not themselves anonymously sourced.</li>
+                        <li>Articles that do not have a publication date in Google search results or the URL are not included.</li>
+                        <li>The tracker does not distinguish between good use and misuse of anonymous sources.</li>
+                    </ul>
+                </p>
+            </div>
+        </div><!-- row -->
+    </div> <!-- container -->
+</body>
+</html>
+

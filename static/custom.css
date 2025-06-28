@@ -1,0 +1,102 @@
+body {
+    font-family: system-ui, Libre Baskerville, Georgia, "Times New Roman", serif;
+    font-size: 2em;
+}
+
+h1 {
+    color: #000000;
+}
+
+h3 {
+    font-weight: bold;
+}
+
+h4 {
+    text-decoration: underline;
+}
+
+hr + b {
+    color:#000000;
+    background-color: yellow;
+    font-weight: normal;
+}
+
+.timestamp {
+    color: #696969;
+    float: right;
+}
+
+div .timestamp a {
+    color: #696969;
+}
+
+div.timestamp a:hover {
+    text-decoration: underline; color: #E00000;
+}
+
+.jumbotron {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    background-color: white;
+}
+
+a {
+    text-decoration: none;
+    color: black;
+}
+
+h1 > a {
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline; color: #E00000;
+}
+
+a:hover#masthed {
+    text-decoration: none;
+    color: #E00000;
+}
+
+#masthed a {
+    text-decoration: none;
+    color: #E00000;
+}
+
+.credit {
+    padding-bottom: 20px;
+    font-size: 12pt;
+    color: #696969;
+}
+
+.pagination-page-info {
+    padding: .6em;
+    padding-left: 0;
+    width: 40em;
+    margin: .5em;
+    margin-left: 0;
+    font-size: 14px;
+}
+
+.pagination-page-info b {
+    color: black;
+    background: white;
+    /*padding-left: 2px;*/
+    /*padding: .1em .25em;*/
+    font-size: 150%;
+}
+
+.pagination > .active > a {
+    background-color: black;
+    border-color: black;
+}
+
+.pagination > .active > a:hover {
+    background-color: lightgray;
+    border-color: black;
+}
+
+.pagination > li > a, .pagination > li > span {
+    color: black;
+}
+
