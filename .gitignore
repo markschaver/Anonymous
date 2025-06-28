@@ -9,6 +9,9 @@ wheels/
 # Virtual environments
 .venv
 
+# PyCharm
+.idea
+
 # Files
 config.ini
 .DS_Store
