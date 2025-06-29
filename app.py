@@ -15,7 +15,7 @@ import math
 # CONFIGURATION
 # --------------------------------------------------------------------
 config = configparser.ConfigParser()
-config.read("config.ini")
+config.read("/Users/markschaver/.config/anonymous/config.ini")
 FREEZER_DESTINATION = config.get("Configuration", "destination")
 PER_PAGE = config.get("Configuration", "per_page")
 PER_PAGE = int(PER_PAGE)

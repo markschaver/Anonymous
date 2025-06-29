@@ -8,7 +8,7 @@ from sqlite3 import connect
 from sqlite3 import Error
 
 config = configparser.ConfigParser()
-config.read("config.ini")
+config.read("/Users/markschaver/.config/anonymous/config.ini")
 YOUR_ID = config.get("Configuration", "id")
 YOUR_KEY = config.get("Configuration", "key")
 
