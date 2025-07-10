@@ -17,17 +17,17 @@ output_dir = 'json/'
 today = date.today()
 
 # Divide phrases into two days to stay under Google's 100 free queries a day limit
-# if today.day % 2 == 0:
-#     # Even
-#     phrases = open("anonymous-phrases-even.txt")
-#     print("It's an even day.")
-# else:
-#     # Odd
-#     phrases = open("anonymous-phrases-odd.txt")
-#     print("It's an odd day.")
+if today.day % 2 == 0:
+    # Even
+    phrases = open("anonymous-phrases-even.txt")
+    print("It's an even day.")
+else:
+    # Odd
+    phrases = open("anonymous-phrases-odd.txt")
+    print("It's an odd day.")
 
-phrases = open("phrases.txt")
-print("Opening phrases...")
+# phrases = open("phrases.txt")
+# print("Opening phrases...")
 
 
 def encode_phrase(unencoded_phrase):
@@ -40,7 +40,7 @@ def encode_phrase(unencoded_phrase):
 def get_url(query):
     base = 'https://www.googleapis.com/customsearch/v1?q='
     google_id = YOUR_ID
-    restrict = "&dateRestrict=d1"
+    restrict = "&dateRestrict=d2"
     exact = "&" + query
     language = "&hl=en"
     google_key = YOUR_KEY
