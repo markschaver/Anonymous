@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SRC="/Users/markschaver/Library/CloudStorage/OneDrive-Personal/Code/Anonymous/json"
+SRC="/Users/markschaver/Library/CloudStorage/OneDrive-Personal/Anonymous/json"
 DST="/Users/markschaver/Library/CloudStorage/OneDrive-Personal/Archive/Anonymous/json"
 
 # 1. Ensure the destination exists

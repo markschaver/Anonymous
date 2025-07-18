@@ -3,9 +3,7 @@ import re
 
 DB_PATH = 'anon.db'
 
-# Matches "1 days ago ... ...", … up to "24 days ago ... ...", plus everything after.
-import re
-
+# To remove days ago, etc. from Google search results
 pattern = re.compile(
     r'\b(?:'
       r'(?:[1-9]|1[0-9]|2[0-4])\s+(?:day|hour)s?'
@@ -14,6 +12,7 @@ pattern = re.compile(
     r')\s+ago\s*<b>\.\.\.<\/b>',
     flags=re.IGNORECASE
 )
+
 
 def clean_content(db_path):
     conn = sqlite3.connect(db_path)
