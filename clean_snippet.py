@@ -6,9 +6,9 @@ DB_PATH = 'anon.db'
 # To remove days ago, etc. from Google search results
 pattern = re.compile(
     r'\b(?:'
-      r'(?:[1-9]|1[0-9]|2[0-4])\s+(?:day|hour)s?'
-      r'|'
-      r'(?:[1-9]|[1-5][0-9])\s+minutes?'
+    r'(?:[1-9]|1[0-9]|2[0-4])\s+(?:day|hour)s?'
+    r'|'
+    r'(?:[1-9]|[1-5][0-9])\s+minutes?'
     r')\s+ago\s*<b>\.\.\.<\/b>',
     flags=re.IGNORECASE
 )
@@ -31,6 +31,7 @@ def clean_content(db_path):
 
     conn.commit()
     conn.close()
+
 
 if __name__ == '__main__':
     clean_content(DB_PATH)
