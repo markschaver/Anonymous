@@ -79,8 +79,31 @@ SQL_statements = [
     "DELETE FROM anon WHERE link LIKE '%https://www.wsj.com/livecoverage/%';",
     "DELETE FROM anon WHERE link = 'https://abcnews.go.com/Politics';",
     "DELETE FROM anon WHERE link LIKE '%https://abcnews.go.com/alerts/%';",
-    "DELETE FROM anon WHERE link = 'https://www.axios.com/politics-policy';"
-    ]
+    "DELETE FROM anon WHERE link = 'https://www.axios.com/politics-policy';",
+    "DELETE FROM anon WHERE link LIKE '%https://www.cbsnews.com/chicago/tag/%';",
+    "DELETE FROM anon WHERE link LIKE '%https://www.chicagotribune.com/author/%';",
+    "DELETE FROM anon WHERE link LIKE '%https://www.nytimes.com/international/section/education%';",
+    "DELETE FROM anon WHERE link LIKE '%https://www.nytimes.com/international/section/politics%';",
+    "DELETE FROM anon WHERE link LIKE '%https://www.nytimes.com/section/education%';",
+    "DELETE FROM anon WHERE link LIKE '%https://www.nytimes.com/the-daily%';",
+    "DELETE FROM anon WHERE link LIKE '%https://www.reuters.com/business/energy/pipelines-transport/%';",
+    "DELETE FROM anon WHERE link LIKE '%https://www.reuters.com/business/energy/refining/%';",
+    "DELETE FROM anon WHERE link LIKE '%https://www.reuters.com/sustainability/human-rights/%';",
+    "DELETE FROM anon WHERE link LIKE '%https://www.reuters.com/sustainability/regulatory-oversight/%';",
+    "DELETE FROM anon WHERE link LIKE '%https://www.reuters.com/technology/%';",
+    "DELETE FROM anon WHERE link LIKE '%https://www.reuters.com/world/germany/%';",
+    "DELETE FROM anon WHERE link LIKE '%https://www.reuters.com/world/immigration/%';",
+    "DELETE FROM anon WHERE link LIKE '%https://www.reuters.com/world/us/california/%';",
+    "DELETE FROM anon WHERE link LIKE '%https://www.sfchronicle.com/author/%';",
+    "DELETE FROM anon WHERE link LIKE '%https://www.startribune.com/sports/%';",
+    "DELETE FROM anon WHERE link LIKE '%https://www.startribune.com/author/%';",
+    "DELETE FROM anon WHERE link = 'https://www.latimes.com/oe-howtosubmitoped-story.html';",
+    "DELETE FROM anon WHERE link = 'https://www.latimes.com/espanol/politica';",
+    "DELETE FROM anon WHERE link = 'https://www.propublica.org/';",
+    "DELETE FROM anon WHERE link = 'https://www.sfchronicle.com/us-world/us/';",
+    "DELETE FROM anon WHERE link LIKE '%https://www.washingtonpost.com/local/dc/%';",
+    "DELETE FROM anon WHERE link = 'https://www.washingtontimes.com/topics/hamas/';",
+]
 
 for statement in SQL_statements:
     curs.execute(statement)
