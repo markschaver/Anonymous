@@ -2,7 +2,7 @@ from sqlite3 import connect
 from sqlite3 import Error
 
 
-conn = connect(r"/Users/markschaver/Library/CloudStorage/OneDrive-Personal/Anonymous/anon.db")
+conn = connect(r"/Users/markschaver/GitHub/Anonymous/anon.db")
 curs = conn.cursor()
 
 try:
