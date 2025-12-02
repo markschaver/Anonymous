@@ -68,3 +68,6 @@
 "declined to give her name"
 "declined to give his first name"
 "declined to give his last name"
+"they were granted anonymity"
+"he was granted anonymity"
+"she was granted anonymity"
