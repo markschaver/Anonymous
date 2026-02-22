@@ -2,7 +2,7 @@ import json
 import os
 import html
 import configparser
-from datetime import date
+from datetime import date, datetime
 import re
 from sqlite3 import connect
 from sqlite3 import Error
@@ -16,6 +16,7 @@ conn = connect(r"anon.db")
 curs = conn.cursor()
 today = date.today()
 input_dir = "json/"
+invalid_log_path = "invalid-dates.log"
 
 
 bold_tag = re.compile(r"<b>", re.MULTILINE)
@@ -36,6 +37,11 @@ def update_database(results_json):
                      item_snippet,
                      today,
                      publish_date]
+    # Skip entries with invalid date values for today or publish_date.
+    if not (is_valid_date(today) and is_valid_date(publish_date)):
+        log_invalid_date(item_link, today, publish_date)
+        print("Skipping. Invalid date for today or publish_date.")
+        return
     match = re.search(
         bold_tag,
         item_snippet)  # Skip entries with no phrase in summary
@@ -49,6 +55,30 @@ def update_database(results_json):
             print("Oops: ", e.args[0])
     else:
         print("Skipping. No anonymous phrase in the entry.")
+
+
+def is_valid_date(value):
+    if isinstance(value, date):
+        return True
+    if not value:
+        return False
+    if isinstance(value, str):
+        try:
+            datetime.strptime(value, "%Y-%m-%d")
+            return True
+        except ValueError:
+            return False
+    return False
+
+
+def log_invalid_date(item_link, today_value, publish_date_value):
+    timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    entry = (
+        f"{timestamp}\turl={item_link}\t"
+        f"today={today_value}\tpublish_date={publish_date_value}\n"
+    )
+    with open(invalid_log_path, "a", encoding="utf-8") as log_file:
+        log_file.write(entry)
 
 
 def process_search_results(results_json):
