@@ -62,9 +62,25 @@ def is_valid_date(value):
         return True
     if not value:
         return False
-    if isinstance(value, str):
+    # Accept Unix epoch timestamps (seconds) as valid date values.
+    if isinstance(value, (int, float)):
         try:
-            datetime.strptime(value, "%Y-%m-%d")
+            datetime.utcfromtimestamp(float(value))
+            return True
+        except (OverflowError, OSError, ValueError):
+            return False
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped:
+            return False
+        if re.fullmatch(r"-?\d+(?:\.\d+)?", stripped):
+            try:
+                datetime.utcfromtimestamp(float(stripped))
+                return True
+            except (OverflowError, OSError, ValueError):
+                return False
+        try:
+            datetime.strptime(stripped, "%Y-%m-%d")
             return True
         except ValueError:
             return False
