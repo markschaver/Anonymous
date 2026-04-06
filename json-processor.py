@@ -108,7 +108,9 @@ def process_search_results(results_json):
                 if 'yahoo.com' in item_source:
                     item_source = 'www.yahoo.com'
                 if 'cnn.com' in item_source:
-                    item_source = 'www.cnn.com'                    
+                    item_source = 'www.cnn.com'
+                if 'usatoday.com' in item_source:
+                    item_source = 'www.usatoday.com'
                 item_phrase = results_json["queries"]["request"][0]["searchTerms"]
                 item_title = results_json["items"][i]["title"]
                 item_link = results_json["items"][i]["link"]
