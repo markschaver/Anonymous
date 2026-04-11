@@ -103,14 +103,82 @@ def process_search_results(results_json):
         for i in range(item_count):
             try:
                 item_source = results_json["items"][i]["displayLink"]
-                if item_source == 'apnews.com':
-                    item_source = re.sub('apnews.com', 'www.apnews.com', item_source)
-                if 'yahoo.com' in item_source:
-                    item_source = 'www.yahoo.com'
-                if 'cnn.com' in item_source:
-                    item_source = 'www.cnn.com'
+                if 'nytimes.com' in item_source:
+                    item_source = 'www.nytimes.com'
+                if 'washingtonpost.com' in item_source:
+                    item_source = 'www.washingtonpost.com'
+                if 'abcnews.go.com' in item_source:
+                    item_source = 'abcnews.go.com'
+                if 'nbcnews.com' in item_source:
+                    item_source = 'www.nbcnews.com'
+                if 'foxnews.com' in item_source:
+                    item_source = 'www.foxnews.com'
+                if 'apnews.com' in item_source:
+                    item_source = 'www.apnews.com'
+                if 'bloomberg.com' in item_source:
+                    item_source = 'www.bloomberg.com'
                 if 'usatoday.com' in item_source:
                     item_source = 'www.usatoday.com'
+                if 'wsj.com' in item_source:
+                    item_source = 'www.wsj.com'
+                if 'politico.com' in item_source:
+                    item_source = 'www.politico.com'
+                if 'cnn.com' in item_source:
+                    item_source = 'www.cnn.com'
+                if 'cbsnews.com' in item_source:
+                    item_source = 'www.cbsnews.com'
+                if 'cnbc.com' in item_source:
+                    item_source = 'www.cnbc.com'
+                if 'mcclatchydc.com' in item_source:
+                    item_source = 'www.mcclatchydc.com'
+                if 'reuters.com' in item_source:
+                    item_source = 'www.reuters.com'
+                if 'msnbc.com' in item_source:
+                    item_source = 'www.msnbc.com'
+                if 'theguardian.com' in item_source:
+                    item_source = 'www.theguardian.com'
+                if 'time.com' in item_source:
+                    item_source = 'time.com'
+                if 'newsweek.com' in item_source:
+                    item_source = 'www.newsweek.com'
+                if 'msn.com' in item_source:
+                    item_source = 'www.msn.com'
+                if 'bbc.com' in item_source:
+                    item_source = 'www.bbc.com'
+                if 'nypost.com' in item_source:
+                    item_source = 'nypost.com'
+                if 'latimes.com' in item_source:
+                    item_source = 'www.latimes.com'
+                if 'axios.com' in item_source:
+                    item_source = 'www.axios.com'
+                if 'yahoo.com' in item_source:
+                    item_source = 'www.yahoo.com'
+                if 'startribune.com' in item_source:
+                    item_source = 'www.startribune.com'
+                if 'ft.com' in item_source:
+                    item_source = 'www.ft.com'
+                if 'sfchronicle.com' in item_source:
+                    item_source = 'www.sfchronicle.com'
+                if 'propublica.org' in item_source:
+                    item_source = 'www.propublica.org'
+                if 'chicagotribune.com' in item_source:
+                    item_source = 'www.chicagotribune.com'
+                if 'vox.com' in item_source:
+                    item_source = 'www.vox.com'
+                if 'washingtonexaminer.com' in item_source:
+                    item_source = 'www.washingtonexaminer.com'
+                if 'washingtontimes.com' in item_source:
+                    item_source = 'www.washingtontimes.com'
+                if 'theglobeandmail.com' in item_source:
+                    item_source = 'www.theglobeandmail.com'
+                if 'theaustralian.com.au' in item_source:
+                    item_source = 'www.theaustralian.com.au'
+                if 'thehill.com' in item_source:
+                    item_source = 'thehill.com'
+                if 'npr.org' in item_source:
+                    item_source = 'www.npr.org'
+                if 'newsday.com' in item_source:
+                    item_source = 'www.newsday.com'
                 item_phrase = results_json["queries"]["request"][0]["searchTerms"]
                 item_title = results_json["items"][i]["title"]
                 item_link = results_json["items"][i]["link"]
