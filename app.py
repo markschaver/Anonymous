@@ -17,8 +17,7 @@ import math
 config = configparser.ConfigParser()
 config.read("/Users/markschaver/.config/anonymous/config.ini")
 FREEZER_DESTINATION = config.get("Configuration", "destination")
-PER_PAGE = config.get("Configuration", "per_page")
-PER_PAGE = int(PER_PAGE)
+PER_PAGE = config.getint("Configuration", "per_page")
 
 
 app = Flask(__name__)
@@ -28,6 +27,23 @@ app.config['FREEZER_RELATIVE_URLS'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 freezer = Freezer(app)
 extra_bold = re.compile(r"</b>.*?<b>", re.MULTILINE)
+
+
+# --------------------------------------------------------------------
+# SQL
+# --------------------------------------------------------------------
+ENTRIES_SELECT = (
+    "SELECT anon.source, outlets.name, anon.phrase, anon.title, "
+    "anon.link, anon.content, anon.date_published "
+    "FROM anon LEFT OUTER JOIN outlets ON anon.source = outlets.url"
+)
+OUTLETS_IN_USE = (
+    "SELECT DISTINCT outlets.name, outlets.url "
+    "FROM outlets JOIN anon ON outlets.url = anon.source "
+    "ORDER BY outlets.name"
+)
+COUNT_ANON = "SELECT count(*) AS n FROM anon"
+COUNT_ANON_BY_SOURCE = "SELECT count(*) AS n FROM anon WHERE source = ?"
 
 
 # --------------------------------------------------------------------
@@ -91,38 +107,18 @@ def get_outlet_urls():
     return urls
 
 
-def get_outlet_names():
-    g.db = connect_db()
-    names = query_db("SELECT DISTINCT name FROM outlets ORDER BY name")
-    g.db.close()
-    return names
-
-
 def get_total_anon_pages():
     g.db = connect_db()
-    results = query_db("SELECT count(*) FROM anon", '', one=True)
-    total = int(next(iter(results.values())))
-    num_pages = total / PER_PAGE
-    num_pages = math.ceil(num_pages)
+    results = query_db(COUNT_ANON, one=True)
     g.db.close()
-    return num_pages
+    return math.ceil(results['n'] / PER_PAGE)
 
 
 def get_total_outlet_pages(outlet_url):
     g.db = connect_db()
-    results = query_db("SELECT count(*) FROM anon WHERE source = ?", (outlet_url,), one=True)
-    total = int(next(iter(results.values())))
-    num_pages = total / PER_PAGE
-    num_pages = math.ceil(num_pages)
+    results = query_db(COUNT_ANON_BY_SOURCE, (outlet_url,), one=True)
     g.db.close()
-    return num_pages
-
-
-def get_articles():
-    g.db = connect_db()
-    results = query_db("SELECT source, date_published, title FROM anon")
-    g.db.close()
-    return results
+    return math.ceil(results['n'] / PER_PAGE)
 
 
 # --------------------------------------------------------------------
@@ -172,13 +168,11 @@ def show_single_page_or_not():
     return current_app.config.get('SHOW_SINGLE_PAGE', False)
 
 
-def get_page_items():
-    page = int(request.args.get('page', 1))
+def get_page_items(page=None):
+    if page is None:
+        page = int(request.args.get('page', 1))
     per_page = request.args.get('per_page')
-    if not per_page:
-        per_page = PER_PAGE
-    else:
-        per_page = int(per_page)
+    per_page = int(per_page) if per_page else PER_PAGE
     offset = (page - 1) * per_page
     return page, per_page, offset
 
@@ -196,114 +190,49 @@ def get_pagination(**kwargs):
 # --------------------------------------------------------------------
 @freezer.register_generator
 def index_pages():
-    pages = get_total_anon_pages()
-    for page in range(1, int(pages) + 1):
-        yield 'index_pages', {'page': str(page)}
+    for page in range(1, get_total_anon_pages() + 1):
+        yield f'/page/{page}/'
 
 
 @freezer.register_generator
 def outlet_pages():
-    outlet_urls = get_outlet_urls()
-    for outlet_url in outlet_urls:
+    for outlet_url in get_outlet_urls():
         pages = get_total_outlet_pages(outlet_url['url'])
         outlet_name = get_outlet_name(outlet_url['url'])
         # TODO: Fix spurious pages-not-frozen error
-        for page in range(1, int(pages) + 1):
-            page_url = '/outlet/' + outlet_name + '/page/' + str(page) + '/'
-            yield page_url
+        for page in range(1, pages + 1):
+            yield f'/outlet/{outlet_name}/page/{page}/'
 
 # --------------------------------------------------------------------
 # ROUTES
 # --------------------------------------------------------------------
-@app.route('/')
-def index():
-    total = query_db('SELECT count(*) FROM anon', '', one=True)
-    page, per_page, offset = get_page_items()
-    results = query_db('SELECT anon.source, '
-                       'outlets.name, '
-                       'anon.phrase, '
-                       'anon.title, '
-                       'anon.link, '
-                       'anon.content, '
-                       'anon.date_published '
-                       'FROM '
-                       'anon '
-                       'LEFT OUTER JOIN '
-                       'outlets '
-                       'ON '
-                       'anon.source = outlets.url '
-                       'ORDER BY '
-                       'date_published DESC '
-                       'LIMIT ?, ?', (offset, per_page))
-    outlets = query_db("SELECT DISTINCT "
-                       "outlets.name, "
-                       "outlets.url "
-                       "FROM outlets "
-                       "JOIN anon "
-                       "ON outlets.url = anon.source "
-                       "ORDER BY outlets.name")
-    pagination = get_pagination(page=page,
-                                per_page=per_page,
-                                total=next(iter(total.values())),
-                                format_total=True,
-                                format_number=True,
-                                display_msg='',
-                                href='/anonymous/page/{0}/'
-                                )
-    return render_template('index.html',
-                           entries=results,
-                           page=page,
-                           per_page=per_page,
-                           outlets=outlets,
-                           pagination=pagination)
-
-
+@app.route('/', defaults={'page': None})
 @app.route('/page/<int:page>/')
-def index_pages(page):
-    per_page = request.args.get('per_page')
-    if not per_page:
-        per_page = PER_PAGE
-    else:
-        per_page = int(per_page)
-    offset = (page - 1) * per_page
-    total = query_db('SELECT count(*) FROM anon', '', one=True)
-    results = query_db('SELECT anon.source, '
-                       'outlets.name, '
-                       'anon.phrase, '
-                       'anon.title, '
-                       'anon.link, '
-                       'anon.content, '
-                       'anon.date_published '
-                       'FROM '
-                       'anon '
-                       'LEFT OUTER JOIN '
-                       'outlets '
-                       'ON '
-                       'anon.source = outlets.url '
-                       'ORDER BY '
-                       'date_published DESC '
-                       'LIMIT ?, ?', (offset, per_page))
-    outlets = query_db("SELECT DISTINCT "
-                       "outlets.name, "
-                       "outlets.url "
-                       "FROM outlets "
-                       "JOIN anon "
-                       "ON outlets.url = anon.source "
-                       "ORDER BY outlets.name")
-    pagination = get_pagination(page=page,
-                                per_page=per_page,
-                                total=next(iter(total.values())),
-                                format_total=True,
-                                format_number=True,
-                                display_msg='',
-                                href='/anonymous/page/{0}/'
-                                )
-    return render_template('index.html',
-                           entries=results,
-                           page=page,
-                           per_page=per_page,
-                           outlets=outlets,
-                           pagination=pagination)
+def index(page):
+    page, per_page, offset = get_page_items(page)
+    total = query_db(COUNT_ANON, one=True)
+    results = query_db(
+        f"{ENTRIES_SELECT} ORDER BY date_published DESC LIMIT ?, ?",
+        (offset, per_page),
+    )
+    outlets = query_db(OUTLETS_IN_USE)
+    pagination = get_pagination(
+        page=page,
+        per_page=per_page,
+        total=total['n'],
+        format_total=True,
+        format_number=True,
+        display_msg='',
+        href='/anonymous/page/{0}/',
+    )
+    return render_template(
+        'index.html',
+        entries=results,
+        page=page,
+        per_page=per_page,
+        outlets=outlets,
+        pagination=pagination,
+    )
 
 # TODO: Fix function so outlet name has to match
 # TODO: Try doing search on parameters without article ID
@@ -318,109 +247,37 @@ def article(outlet, pub_date, title):
                            results=results)
 
 
-@app.route('/outlet/<outlet_name>/')
-def outlet(outlet_name):
-    masthead = parse.unquote_plus(outlet_name)
-    outlet_url = get_outlet_url(outlet_name)
-    total = query_db(
-        'SELECT count(*) '
-        'FROM anon '
-        'LEFT OUTER JOIN outlets ON anon.source = outlets.url '
-        'WHERE anon.source = ?',
-        (outlet_url,), one=True)
-    page, per_page, offset = get_page_items()
-    results = query_db("SELECT "
-                       "anon.link, "
-                       "outlets.name, "
-                       "anon.source, "
-                       "anon.phrase, "
-                       "anon.title, "
-                       "anon.content, "
-                       "anon.date_published "
-                       "FROM "
-                       "anon "
-                       "LEFT OUTER JOIN outlets "
-                       "ON anon.source = outlets.url "
-                       "WHERE anon.source = ? "
-                       "ORDER BY anon.date_published DESC "
-                       "LIMIT ?, ?", (outlet_url, offset, per_page))
-    outlets = query_db("SELECT DISTINCT "
-                       "outlets.name, "
-                       "outlets.url "
-                       "FROM outlets "
-                       "JOIN anon "
-                       "ON outlets.url = anon.source "
-                       "ORDER BY outlets.name")
-    pagination = get_pagination(page=page,
-                                per_page=per_page,
-                                total=next(iter(total.values())),
-                                format_total=True,
-                                format_number=True,
-                                display_msg='',
-                                href="/anonymous/outlet/" + outlet_name + "/page/{0}/"
-                                )
-    return render_template('outlet.html',
-                           entries=results,
-                           page=page,
-                           per_page=per_page,
-                           masthead=masthead,
-                           outlets=outlets,
-                           pagination=pagination)
-
-
+@app.route('/outlet/<outlet_name>/', defaults={'page': None})
 @app.route('/outlet/<outlet_name>/page/<int:page>/')
-def outlet_pages(outlet_name, page):
+def outlet(outlet_name, page):
     masthead = parse.unquote_plus(outlet_name)
     outlet_url = get_outlet_url(outlet_name)
-    total = query_db(
-        'SELECT count(*) '
-        'FROM anon '
-        'LEFT OUTER JOIN outlets ON anon.source = outlets.url '
-        'WHERE anon.source = ?',
-        (outlet_url,), one=True)
-    per_page = request.args.get('per_page')
-    if not per_page:
-        per_page = PER_PAGE
-    else:
-        per_page = int(per_page)
-    offset = (page - 1) * per_page
-    results = query_db("SELECT "
-                       "anon.link, "
-                       "outlets.name, "
-                       "anon.source, "
-                       "anon.phrase, "
-                       "anon.title, "
-                       "anon.content, "
-                       "anon.date_published "
-                       "FROM "
-                       "anon "
-                       "LEFT OUTER JOIN outlets "
-                       "ON anon.source = outlets.url "
-                       "WHERE anon.source = ? "
-                       "ORDER BY anon.date_published DESC "
-                       "LIMIT ?, ?", (outlet_url, offset, per_page))
-    outlets = query_db("SELECT DISTINCT "
-                       "outlets.name, "
-                       "outlets.url "
-                       "FROM outlets "
-                       "JOIN anon "
-                       "ON outlets.url = anon.source "
-                       "ORDER BY outlets.name")
-    pagination = get_pagination(page=page,
-                                per_page=per_page,
-                                total=next(iter(total.values())),
-                                format_total=True,
-                                format_number=True,
-                                display_msg='',
-                                href="/anonymous/outlet/" + outlet_name + "/page/{0}/"
-                                )
-    return render_template('outlet.html',
-                           entries=results,
-                           page=page,
-                           per_page=per_page,
-                           masthead=masthead,
-                           outlets=outlets,
-                           pagination=pagination)
+    page, per_page, offset = get_page_items(page)
+    total = query_db(COUNT_ANON_BY_SOURCE, (outlet_url,), one=True)
+    results = query_db(
+        f"{ENTRIES_SELECT} WHERE anon.source = ? "
+        "ORDER BY anon.date_published DESC LIMIT ?, ?",
+        (outlet_url, offset, per_page),
+    )
+    outlets = query_db(OUTLETS_IN_USE)
+    pagination = get_pagination(
+        page=page,
+        per_page=per_page,
+        total=total['n'],
+        format_total=True,
+        format_number=True,
+        display_msg='',
+        href=f"/anonymous/outlet/{outlet_name}/page/{{0}}/",
+    )
+    return render_template(
+        'outlet.html',
+        entries=results,
+        page=page,
+        per_page=per_page,
+        masthead=masthead,
+        outlets=outlets,
+        pagination=pagination,
+    )
 
 
 @app.route('/mentions/')
