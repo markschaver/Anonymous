@@ -1,4 +1,4 @@
-from flask import Flask, render_template, g, current_app, request, abort
+from flask import Flask, render_template, g, current_app, request
 from flask_paginate import Pagination
 from sqlite3 import connect
 from datetime import datetime
@@ -126,25 +126,22 @@ def get_total_outlet_pages(outlet_url):
 # --------------------------------------------------------------------
 @app.template_filter('datetimeformat')
 def datetimeformat(value, date_format='%B %e, %Y'):
-    if(value):
-        d = datetime.strptime(value, '%Y-%m-%d')
-        return d.strftime(date_format)
-    else:
-        return abort(404)
+    if not value:
+        return ''
+    return datetime.strptime(value, '%Y-%m-%d').strftime(date_format)
 
 
 @app.template_filter('clean_content')
 def clean_content(content):
-    if(content):
-        content = content.strip()
-        content = content.replace('\n', ' ').replace('\r', '')
-        content = content.replace('<b>...</b>', '...')
-        content = content.replace('<br>', '')
-        content = content.replace(chr(0x01), '')
-        content = re.sub(extra_bold, "\1 ", content)
-        return content
-    else:
-        return abort(404)
+    if not content:
+        return ''
+    content = content.strip()
+    content = content.replace('\n', ' ').replace('\r', '')
+    content = content.replace('<b>...</b>', '...')
+    content = content.replace('<br>', '')
+    content = content.replace(chr(0x01), '')
+    content = re.sub(extra_bold, " ", content)
+    return content
 
 
 @app.template_filter('plus_for_spaces')

@@ -1,10 +1,4 @@
-"""Unit tests for Jinja template filters registered in app.py.
-
-These pin down current behavior (including the \\x01-vs-\\1 quirk in
-clean_content, see app.py:148) so a refactor preserves identical output.
-"""
-import pytest
-from werkzeug.exceptions import NotFound
+"""Unit tests for Jinja template filters registered in app.py."""
 
 
 def test_datetimeformat_default(flask_app):
@@ -19,13 +13,12 @@ def test_datetimeformat_custom_format(flask_app):
         assert datetimeformat("2025-06-13", "%Y/%m/%d") == "2025/06/13"
 
 
-def test_datetimeformat_falsy_aborts(flask_app):
+def test_datetimeformat_falsy_returns_empty(flask_app):
+    """A single NULL date shouldn't 404 the whole listing page."""
     with flask_app.app_context():
         from app import datetimeformat
-        with pytest.raises(NotFound):
-            datetimeformat("")
-        with pytest.raises(NotFound):
-            datetimeformat(None)
+        assert datetimeformat("") == ''
+        assert datetimeformat(None) == ''
 
 
 def test_clean_content_strips_and_replaces(flask_app):
@@ -48,29 +41,22 @@ def test_clean_content_removes_x01(flask_app):
         assert "\x01" not in out
 
 
-def test_clean_content_extra_bold_current_behavior(flask_app):
-    """The `extra_bold` regex collapses </b>...<b> runs.
-
-    Note: app.py line 148 uses a non-raw "\\1 " replacement, so the
-    "backreference" is actually chr(0x01) + space. And because the
-    chr(0x01) strip on line 147 runs BEFORE this substitution, the
-    \\x01 injected here survives into the output. This test pins
-    the current (likely-buggy) behavior.
-    """
+def test_clean_content_extra_bold_collapses_to_space(flask_app):
+    """`</b>...<b>` runs collapse to a single space, no stray \\x01."""
     with flask_app.app_context():
         from app import clean_content
         raw = "foo</b>middle<b>bar"
         out = clean_content(raw)
-        assert out == "foo\x01 bar"
+        assert out == "foo bar"
+        assert "\x01" not in out
 
 
-def test_clean_content_falsy_aborts(flask_app):
+def test_clean_content_falsy_returns_empty(flask_app):
+    """Empty content shouldn't 404 the whole listing page."""
     with flask_app.app_context():
         from app import clean_content
-        with pytest.raises(NotFound):
-            clean_content("")
-        with pytest.raises(NotFound):
-            clean_content(None)
+        assert clean_content("") == ''
+        assert clean_content(None) == ''
 
 
 def test_plus_for_spaces(flask_app):
