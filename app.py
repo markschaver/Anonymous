@@ -190,6 +190,7 @@ def get_pagination(**kwargs):
 # --------------------------------------------------------------------
 @freezer.register_generator
 def index_pages():
+    yield '/'
     for page in range(1, get_total_anon_pages() + 1):
         yield f'/page/{page}/'
 
@@ -199,6 +200,7 @@ def outlet_pages():
     for outlet_url in get_outlet_urls():
         pages = get_total_outlet_pages(outlet_url['url'])
         outlet_name = get_outlet_name(outlet_url['url'])
+        yield f'/outlet/{outlet_name}/'
         # TODO: Fix spurious pages-not-frozen error
         for page in range(1, pages + 1):
             yield f'/outlet/{outlet_name}/page/{page}/'
