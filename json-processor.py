@@ -2,59 +2,99 @@ import json
 import os
 import html
 import configparser
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 import re
-from sqlite3 import connect
-from sqlite3 import Error
+from sqlite3 import connect, Error
 
 config = configparser.ConfigParser()
 config.read("/Users/markschaver/.config/anonymous/config.ini")
 YOUR_ID = config.get("Configuration", "id")
 YOUR_KEY = config.get("Configuration", "key")
 
-conn = connect(r"anon.db")
-curs = conn.cursor()
-today = date.today()
-input_dir = "json/"
-invalid_log_path = "invalid-dates.log"
-
+INPUT_DIR = "json/"
+INVALID_LOG_PATH = "invalid-dates.log"
+DB_PATH = "anon.db"
 
 bold_tag = re.compile(r"<b>", re.MULTILINE)
-pub_date = re.compile(r".*(\d\d\d\d)/(\d\d)/(\d\d).*", re.MULTILINE)
+pub_date_re = re.compile(r".*(\d\d\d\d)/(\d\d)/(\d\d).*", re.MULTILINE)
+
+# Substring of displayLink -> canonical source stored in the DB.
+# Checked in order; last match wins (same as the original stacked ifs).
+SOURCE_OVERRIDES = {
+    'nytimes.com': 'www.nytimes.com',
+    'washingtonpost.com': 'www.washingtonpost.com',
+    'abcnews.go.com': 'abcnews.go.com',
+    'nbcnews.com': 'www.nbcnews.com',
+    'foxnews.com': 'www.foxnews.com',
+    'apnews.com': 'www.apnews.com',
+    'bloomberg.com': 'www.bloomberg.com',
+    'usatoday.com': 'www.usatoday.com',
+    'wsj.com': 'www.wsj.com',
+    'politico.com': 'www.politico.com',
+    'cnn.com': 'www.cnn.com',
+    'cbsnews.com': 'www.cbsnews.com',
+    'cnbc.com': 'www.cnbc.com',
+    'mcclatchydc.com': 'www.mcclatchydc.com',
+    'reuters.com': 'www.reuters.com',
+    'msnbc.com': 'www.msnbc.com',
+    'theguardian.com': 'www.theguardian.com',
+    'time.com': 'time.com',
+    'newsweek.com': 'www.newsweek.com',
+    'msn.com': 'www.msn.com',
+    'bbc.com': 'www.bbc.com',
+    'nypost.com': 'nypost.com',
+    'latimes.com': 'www.latimes.com',
+    'axios.com': 'www.axios.com',
+    'yahoo.com': 'www.yahoo.com',
+    'startribune.com': 'www.startribune.com',
+    'ft.com': 'www.ft.com',
+    'sfchronicle.com': 'www.sfchronicle.com',
+    'propublica.org': 'www.propublica.org',
+    'chicagotribune.com': 'www.chicagotribune.com',
+    'vox.com': 'www.vox.com',
+    'washingtonexaminer.com': 'www.washingtonexaminer.com',
+    'washingtontimes.com': 'www.washingtontimes.com',
+    'theglobeandmail.com': 'www.theglobeandmail.com',
+    'theaustralian.com.au': 'www.theaustralian.com.au',
+    'thehill.com': 'thehill.com',
+    'npr.org': 'www.npr.org',
+    'newsday.com': 'www.newsday.com',
+}
+
+# Paths into item['pagemap'] where a publish date might live.
+# Checked in order; LAST successful lookup wins (matches original stacked try/except/pass).
+PUB_DATE_PATHS = [
+    ('newsarticle', 0, 'datepublished'),
+    ('metatags', 0, 'article:published'),
+    ('article', 0, 'datepublished'),
+    ('metatags', 0, 'date'),
+    ('metatags', 0, 'iso-8601-publish-date'),
+    ('metatags', 0, 'analyticsattributes.articledate'),
+    ('metatags', 0, 'sailthru.date'),
+    ('metatags', 0, 'article:published_time'),
+    ('metatags', 0, 'dc.date'),
+]
 
 
-def update_database(results_json):
-    item_source = results_json[0]
-    item_phrase = results_json[1]
-    item_title = results_json[2]
-    item_link = results_json[3]
-    item_snippet = results_json[4]
-    publish_date = results_json[5]
-    insert_values = [item_source,
-                     item_phrase,
-                     item_title,
-                     item_link,
-                     item_snippet,
-                     today,
-                     publish_date]
-    # Skip entries with invalid date values for today or publish_date.
-    if not (is_valid_date(today) and is_valid_date(publish_date)):
-        log_invalid_date(item_link, today, publish_date)
-        print("Skipping. Invalid date for today or publish_date.")
-        return
-    match = re.search(
-        bold_tag,
-        item_snippet)  # Skip entries with no phrase in summary
-    if match:
+def normalize_source(item_source):
+    for needle, replacement in SOURCE_OVERRIDES.items():
+        if needle in item_source:
+            item_source = replacement
+    return item_source
+
+
+def extract_publish_date(item):
+    pagemap = item.get('pagemap', {})
+    item_published = None
+    for path in PUB_DATE_PATHS:
         try:
-            curs.execute("INSERT INTO anon VALUES (?, ?, ?, ?, ?, ?, ?)",
-                         insert_values)
-            conn.commit()
-            print("New entry inserted in the database.")
-        except Error as e:
-            print("Oops: ", e.args[0])
-    else:
-        print("Skipping. No anonymous phrase in the entry.")
+            value = pagemap
+            for key in path:
+                value = value[key]
+            item_published = value
+        except (KeyError, IndexError, TypeError):
+            continue
+    return item_published
 
 
 def is_valid_date(value):
@@ -62,10 +102,9 @@ def is_valid_date(value):
         return True
     if not value:
         return False
-    # Accept Unix epoch timestamps (seconds) as valid date values.
     if isinstance(value, (int, float)):
         try:
-            datetime.utcfromtimestamp(float(value))
+            datetime.fromtimestamp(float(value), tz=timezone.utc)
             return True
         except (OverflowError, OSError, ValueError):
             return False
@@ -75,7 +114,7 @@ def is_valid_date(value):
             return False
         if re.fullmatch(r"-?\d+(?:\.\d+)?", stripped):
             try:
-                datetime.utcfromtimestamp(float(stripped))
+                datetime.fromtimestamp(float(stripped), tz=timezone.utc)
                 return True
             except (OverflowError, OSError, ValueError):
                 return False
@@ -87,177 +126,96 @@ def is_valid_date(value):
     return False
 
 
-def log_invalid_date(item_link, today_value, publish_date_value):
-    timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+def log_invalid_date(item_link, today_value, publish_date_value, log_path=INVALID_LOG_PATH):
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     entry = (
         f"{timestamp}\turl={item_link}\t"
         f"today={today_value}\tpublish_date={publish_date_value}\n"
     )
-    with open(invalid_log_path, "a", encoding="utf-8") as log_file:
+    with open(log_path, "a", encoding="utf-8") as log_file:
         log_file.write(entry)
 
 
-def process_search_results(results_json):
+def update_database(conn, today, fields):
+    item_source, item_phrase, item_title, item_link, item_snippet, publish_date = fields
+    if not (is_valid_date(today) and is_valid_date(publish_date)):
+        log_invalid_date(item_link, today, publish_date)
+        print("Skipping. Invalid date for today or publish_date.")
+        return
+    if not bold_tag.search(item_snippet):
+        print("Skipping. No anonymous phrase in the entry.")
+        return
+    today_str = today.isoformat() if isinstance(today, date) else today
+    try:
+        conn.execute(
+            "INSERT INTO anon VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [item_source, item_phrase, item_title, item_link, item_snippet, today_str, publish_date],
+        )
+        conn.commit()
+        print("New entry inserted in the database.")
+    except Error as e:
+        print("Oops: ", e.args[0])
+
+
+def process_search_results(conn, today, results_json):
     try:
         item_count = results_json["queries"]["request"][0]["count"]
-        for i in range(item_count):
-            try:
-                item_source = results_json["items"][i]["displayLink"]
-                if 'nytimes.com' in item_source:
-                    item_source = 'www.nytimes.com'
-                if 'washingtonpost.com' in item_source:
-                    item_source = 'www.washingtonpost.com'
-                if 'abcnews.go.com' in item_source:
-                    item_source = 'abcnews.go.com'
-                if 'nbcnews.com' in item_source:
-                    item_source = 'www.nbcnews.com'
-                if 'foxnews.com' in item_source:
-                    item_source = 'www.foxnews.com'
-                if 'apnews.com' in item_source:
-                    item_source = 'www.apnews.com'
-                if 'bloomberg.com' in item_source:
-                    item_source = 'www.bloomberg.com'
-                if 'usatoday.com' in item_source:
-                    item_source = 'www.usatoday.com'
-                if 'wsj.com' in item_source:
-                    item_source = 'www.wsj.com'
-                if 'politico.com' in item_source:
-                    item_source = 'www.politico.com'
-                if 'cnn.com' in item_source:
-                    item_source = 'www.cnn.com'
-                if 'cbsnews.com' in item_source:
-                    item_source = 'www.cbsnews.com'
-                if 'cnbc.com' in item_source:
-                    item_source = 'www.cnbc.com'
-                if 'mcclatchydc.com' in item_source:
-                    item_source = 'www.mcclatchydc.com'
-                if 'reuters.com' in item_source:
-                    item_source = 'www.reuters.com'
-                if 'msnbc.com' in item_source:
-                    item_source = 'www.msnbc.com'
-                if 'theguardian.com' in item_source:
-                    item_source = 'www.theguardian.com'
-                if 'time.com' in item_source:
-                    item_source = 'time.com'
-                if 'newsweek.com' in item_source:
-                    item_source = 'www.newsweek.com'
-                if 'msn.com' in item_source:
-                    item_source = 'www.msn.com'
-                if 'bbc.com' in item_source:
-                    item_source = 'www.bbc.com'
-                if 'nypost.com' in item_source:
-                    item_source = 'nypost.com'
-                if 'latimes.com' in item_source:
-                    item_source = 'www.latimes.com'
-                if 'axios.com' in item_source:
-                    item_source = 'www.axios.com'
-                if 'yahoo.com' in item_source:
-                    item_source = 'www.yahoo.com'
-                if 'startribune.com' in item_source:
-                    item_source = 'www.startribune.com'
-                if 'ft.com' in item_source:
-                    item_source = 'www.ft.com'
-                if 'sfchronicle.com' in item_source:
-                    item_source = 'www.sfchronicle.com'
-                if 'propublica.org' in item_source:
-                    item_source = 'www.propublica.org'
-                if 'chicagotribune.com' in item_source:
-                    item_source = 'www.chicagotribune.com'
-                if 'vox.com' in item_source:
-                    item_source = 'www.vox.com'
-                if 'washingtonexaminer.com' in item_source:
-                    item_source = 'www.washingtonexaminer.com'
-                if 'washingtontimes.com' in item_source:
-                    item_source = 'www.washingtontimes.com'
-                if 'theglobeandmail.com' in item_source:
-                    item_source = 'www.theglobeandmail.com'
-                if 'theaustralian.com.au' in item_source:
-                    item_source = 'www.theaustralian.com.au'
-                if 'thehill.com' in item_source:
-                    item_source = 'thehill.com'
-                if 'npr.org' in item_source:
-                    item_source = 'www.npr.org'
-                if 'newsday.com' in item_source:
-                    item_source = 'www.newsday.com'
-                item_phrase = results_json["queries"]["request"][0]["searchTerms"]
-                item_title = results_json["items"][i]["title"]
-                item_link = results_json["items"][i]["link"]
-                item_snippet = html.unescape(results_json["items"][i]["htmlSnippet"])
-                try:
-                    item_published = results_json['items'][i]['pagemap']['newsarticle'][0]['datepublished']
-                except KeyError:
-                    pass
-                try:
-                    item_published = results_json['items'][i]['pagemap']['metatags'][0]['article:published']
-                except KeyError:
-                    pass
-                try:
-                    item_published = results_json['items'][i]['pagemap']['article'][0]['datepublished']
-                except KeyError:
-                    pass
-                try:
-                    item_published = results_json['items'][i]['pagemap']['metatags'][0]['date']
-                except KeyError:
-                    pass
-                try:
-                    item_published = results_json['items'][i]['pagemap']['metatags'][0]['iso-8601-publish-date']
-                except KeyError:
-                    pass
-                try:
-                    item_published = results_json['items'][i]['pagemap']['metatags'][0]['analyticsattributes.articledate']
-                except KeyError:
-                    pass
-                try:
-                    item_published = results_json['items'][i]['pagemap']['metatags'][0]['sailthru.date']
-                except KeyError:
-                    pass
-                try:
-                    item_published = results_json['items'][i]['pagemap']['metatags'][0]['article:published_time']
-                except KeyError:
-                    pass
-                try:
-                    item_published = results_json['items'][i]['pagemap']['metatags'][0]['dc.date']
-                except KeyError:
-                    pass
-                if 'washingtonpost' in item_link:
-                    pub_match = re.search(
-                        pub_date,
-                        item_link)
-                    if pub_match:
-                        item_published = pub_match[1] + '-' + pub_match[2] + '-' + pub_match[3]
-                    else:
-                        pass
-                if 'usatoday' in item_link:
-                    pub_match = re.search(
-                        pub_date,
-                        item_link)
-                    if pub_match:
-                        item_published = pub_match[1] + '-' + pub_match[2] + '-' + pub_match[3]
-                    else:
-                        pass
-                publish_date_parsed = re.sub(r'(\d\d\d\d-\d\d-\d\d).*', r'\1', item_published)
-                db_fields = [item_source, item_phrase, item_title, item_link, item_snippet, publish_date_parsed]
-                update_database(db_fields)
-            except KeyError:
-                continue
-    except Exception:
+        item_phrase = results_json["queries"]["request"][0]["searchTerms"]
+    except (KeyError, IndexError):
         print("There were no matches in this query.")
+        return
 
-
-dir_files = os.listdir(input_dir)
-for file in dir_files:
-    try:
-        # Try UTF-8 first
-        with open(input_dir + file, encoding="utf-8") as f:
-            json_string = json.load(f)
-    except UnicodeDecodeError:
+    for i in range(item_count):
         try:
-            # If UTF-8 fails, try Latin-1
-            with open(input_dir + file, encoding="latin-1") as f:
-                json_string = json.load(f)
-        except Exception as e:
-            print(f"Error processing file {file}: {str(e)}")
+            item = results_json["items"][i]
+            item_source = normalize_source(item["displayLink"])
+            item_title = item["title"]
+            item_link = item["link"]
+            item_snippet = html.unescape(item["htmlSnippet"])
+        except (KeyError, IndexError):
             continue
-    process_search_results(json_string)
 
-conn.close()
+        item_published = extract_publish_date(item)
+        if 'washingtonpost' in item_link or 'usatoday' in item_link:
+            match = pub_date_re.search(item_link)
+            if match:
+                item_published = f"{match[1]}-{match[2]}-{match[3]}"
+
+        if item_published is None:
+            continue
+
+        publish_date_parsed = re.sub(r'(\d\d\d\d-\d\d-\d\d).*', r'\1', item_published)
+        update_database(
+            conn,
+            today,
+            [item_source, item_phrase, item_title, item_link, item_snippet, publish_date_parsed],
+        )
+
+
+def load_json_file(filepath):
+    try:
+        with open(filepath, encoding="utf-8") as f:
+            return json.load(f)
+    except UnicodeDecodeError:
+        with open(filepath, encoding="latin-1") as f:
+            return json.load(f)
+
+
+def main(input_dir=INPUT_DIR, db_path=DB_PATH):
+    conn = connect(db_path)
+    today = date.today()
+    try:
+        for filename in os.listdir(input_dir):
+            filepath = os.path.join(input_dir, filename)
+            try:
+                data = load_json_file(filepath)
+            except Exception as e:
+                print(f"Error processing file {filename}: {e}")
+                continue
+            process_search_results(conn, today, data)
+    finally:
+        conn.close()
+
+
+if __name__ == "__main__":
+    main()
