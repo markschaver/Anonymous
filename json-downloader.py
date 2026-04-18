@@ -1,79 +1,78 @@
 import json
 import time
-from datetime import date
 import configparser
+from datetime import date
 from random import randint
 from time import sleep
-import requests
 from urllib import parse
 
-config = configparser.ConfigParser()
-config.read("/Users/markschaver/.config/anonymous/config.ini")
-YOUR_ID = config.get("Configuration", "id")
-YOUR_KEY = config.get("Configuration", "key")
+import requests
 
-output_dir = 'json/'
 
-today = date.today()
+CONFIG_PATH = "/Users/markschaver/.config/anonymous/config.ini"
+OUTPUT_DIR = "json/"
+PHRASES_EVEN = "anonymous-phrases-even.txt"
+PHRASES_ODD = "anonymous-phrases-odd.txt"
+SLEEP_RANGE = (10, 30)
 
-# Divide phrases into two days to stay under Google's 100 free queries a day limit
-if today.day % 2 == 0:
-    # Even
-    phrases = open("anonymous-phrases-even.txt")
-    print("It's an even day.")
-else:
-    # Odd
-    phrases = open("anonymous-phrases-odd.txt")
+
+def load_config(path=CONFIG_PATH):
+    config = configparser.ConfigParser()
+    config.read(path)
+    return (
+        config.get("Configuration", "id"),
+        config.get("Configuration", "key"),
+    )
+
+
+def get_phrase_file(today):
+    if today.day % 2 == 0:
+        print("It's an even day.")
+        return PHRASES_EVEN
     print("It's an odd day.")
-
-# phrases = open("phrases.txt")
-# print("Opening phrases...")
+    return PHRASES_ODD
 
 
 def encode_phrase(unencoded_phrase):
-    unencoded_phrase = unencoded_phrase.strip()
-    encoded_phrase = parse.quote_plus(unencoded_phrase)
+    encoded_phrase = parse.quote_plus(unencoded_phrase.strip())
     print("Encoded phrase: " + encoded_phrase)
     return encoded_phrase
 
 
-def get_url(query):
+def get_url(query, google_id, google_key):
     base = 'https://www.googleapis.com/customsearch/v1?q='
-    google_id = YOUR_ID
     restrict = "&dateRestrict=d2"
     exact = "&" + query
     language = "&hl=en"
-    google_key = YOUR_KEY
     alt = "&alt=json"
-    request_url = (base +
-                   query +
-                   google_id +
-                   restrict +
-                   exact +
-                   language +
-                   google_key +
-                   alt)
+    request_url = base + query + google_id + restrict + exact + language + google_key + alt
     print("Request url: " + request_url)
     return request_url
 
 
-def get_json(search_url):
+def get_json(search_url, output_dir=OUTPUT_DIR):
     filename = output_dir + time.strftime("%Y%m%d-%H%M%S") + ".json"
-    r = requests.get(search_url)
-    f = open(filename, "w")
-    json_str = json.dumps(r.json())
-    f.write(json_str)
-    f.close()
+    response = requests.get(search_url)
+    with open(filename, "w") as f:
+        json.dump(response.json(), f)
 
 
-def pause_search():
-    # Delay queries randomly to avoid being blocked
+def pause_search(sleep_range=SLEEP_RANGE):
     print("Sleeping...")
-    sleep(randint(10, 30))
+    sleep(randint(*sleep_range))
 
 
-for phrase in phrases:
-    phrase = encode_phrase(phrase)
-    url = get_url(phrase)
-    pause_search()
-    get_json(url)
+def main():
+    google_id, google_key = load_config()
+    today = date.today()
+    phrase_path = get_phrase_file(today)
+    with open(phrase_path) as phrases:
+        for phrase in phrases:
+            encoded = encode_phrase(phrase)
+            url = get_url(encoded, google_id, google_key)
+            pause_search()
+            get_json(url)
+
+
+if __name__ == "__main__":
+    main()
