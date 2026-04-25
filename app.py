@@ -2,6 +2,7 @@ from flask import Flask, render_template, g, current_app, request
 from flask_paginate import Pagination
 from sqlite3 import connect
 from datetime import datetime
+import os
 import re
 import urllib
 from urllib import parse
@@ -14,10 +15,16 @@ import math
 # --------------------------------------------------------------------
 # CONFIGURATION
 # --------------------------------------------------------------------
+DEFAULT_CONFIG_PATH = os.path.expanduser("~/.config/anonymous/config.ini")
+CONFIG_PATH = os.environ.get("ANON_CONFIG", DEFAULT_CONFIG_PATH)
 config = configparser.ConfigParser()
-config.read("/Users/markschaver/.config/anonymous/config.ini")
+config.read(CONFIG_PATH)
 FREEZER_DESTINATION = config.get("Configuration", "destination")
 PER_PAGE = config.getint("Configuration", "per_page")
+GA_MEASUREMENT_ID = os.environ.get(
+    "ANON_GA_ID",
+    config.get("Configuration", "ga_id", fallback=""),
+)
 
 
 app = Flask(__name__)
@@ -27,6 +34,11 @@ app.config['FREEZER_RELATIVE_URLS'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 freezer = Freezer(app)
 extra_bold = re.compile(r"</b>.*?<b>", re.MULTILINE)
+
+
+@app.context_processor
+def inject_globals():
+    return {"ga_measurement_id": GA_MEASUREMENT_ID}
 
 
 # --------------------------------------------------------------------
@@ -288,4 +300,7 @@ if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == "build":
         freezer.freeze()
     else:
-        app.run(host='0.0.0.0', debug=True, port=8080)
+        host = os.environ.get("ANON_HOST", "127.0.0.1")
+        port = int(os.environ.get("ANON_PORT", "8080"))
+        debug = os.environ.get("ANON_DEBUG") == "1"
+        app.run(host=host, debug=debug, port=port)

@@ -19,3 +19,5 @@ config.ini
 Anonymous.sublime-project
 Anonymous.sublime-workspace
 anon.db
+invalid-dates.log
+json/*.json

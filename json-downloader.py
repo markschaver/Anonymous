@@ -1,4 +1,5 @@
 import json
+import os
 import time
 import configparser
 from datetime import date
@@ -9,7 +10,8 @@ from urllib import parse
 import requests
 
 
-CONFIG_PATH = "/Users/markschaver/.config/anonymous/config.ini"
+DEFAULT_CONFIG_PATH = os.path.expanduser("~/.config/anonymous/config.ini")
+CONFIG_PATH = os.environ.get("ANON_CONFIG", DEFAULT_CONFIG_PATH)
 OUTPUT_DIR = "json/"
 PHRASES_EVEN = "anonymous-phrases-even.txt"
 PHRASES_ODD = "anonymous-phrases-odd.txt"

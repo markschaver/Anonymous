@@ -1,7 +1,11 @@
+import os
 from sqlite3 import connect, Error
 
 
-DB_PATH = "/Users/markschaver/GitHub/Anonymous/anon.db"
+DB_PATH = os.environ.get(
+    "ANON_DB",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "anon.db"),
+)
 
 # For each column, keep the lowest ROWID in each (source, <column>) group.
 DEDUP_COLUMNS = ['content', 'title', 'link']

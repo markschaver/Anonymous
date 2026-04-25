@@ -1,15 +1,9 @@
 import json
 import os
 import html
-import configparser
 from datetime import date, datetime, timezone
 import re
 from sqlite3 import connect, Error
-
-config = configparser.ConfigParser()
-config.read("/Users/markschaver/.config/anonymous/config.ini")
-YOUR_ID = config.get("Configuration", "id")
-YOUR_KEY = config.get("Configuration", "key")
 
 INPUT_DIR = "json/"
 INVALID_LOG_PATH = "invalid-dates.log"
