@@ -5,6 +5,8 @@ Tracks examples of anonymous-source phrasing ("a source familiar with...",
 news outlets. Runs daily Google Custom Search queries, stores hits in a
 local SQLite database, and renders a static site from the results.
 
+Live version at https://schaver.com/anonymous/
+
 ## Pipeline
 
 ```
