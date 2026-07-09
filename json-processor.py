@@ -53,6 +53,7 @@ SOURCE_OVERRIDES = {
     'thehill.com': 'thehill.com',
     'npr.org': 'www.npr.org',
     'newsday.com': 'www.newsday.com',
+    'ms.now': 'www.ms.now'
 }
 
 # Paths into item['pagemap'] where a publish date might live.
