@@ -1,0 +1,14 @@
+{% if ga_measurement_id %}
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_measurement_id }}"></script>
+<script>
+  {# Same Do Not Track guard as the GA snippet Congo renders on Schaver.com #}
+  var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+  if (!(dnt == "1" || dnt == "yes")) {
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', '{{ ga_measurement_id }}');
+  }
+</script>
+{% endif %}

@@ -29,6 +29,14 @@ def _chdir_project_root():
 def flask_app():
     import app as app_module
     app_module.app.config["TESTING"] = True
+
+    # Pin globals that vary by machine config or wall clock so the
+    # HTML snapshots stay deterministic. Registered after the app's own
+    # context processor, so these values win.
+    @app_module.app.context_processor
+    def _pin_snapshot_globals():
+        return {"ga_measurement_id": "G-TEST123456", "current_year": 2026}
+
     return app_module.app
 
 

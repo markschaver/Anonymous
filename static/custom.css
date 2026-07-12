@@ -100,3 +100,56 @@ a:hover#masthed {
     color: black;
 }
 
+/* Shared Schaver.com header/footer (matches Congo theme, "ocean" scheme) */
+.site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2rem 0 0.5rem;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    /* Schaver.com uses an 18px root font, so Congo's text-lg computes to
+       20.25px there; use px to match without inheriting this site's sizing. */
+    font-size: 20.25px;
+    font-weight: 600;
+    line-height: 31.5px;
+}
+
+.site-header a {
+    color: #0f172a;
+    text-decoration: none;
+}
+
+.site-header a:hover {
+    color: #0f172a;
+    text-decoration: underline;
+    text-decoration-color: #3b82f6;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 2px;
+}
+
+.site-nav a {
+    margin-left: 1.75rem;
+}
+
+.site-nav a:first-child {
+    margin-left: 0;
+}
+
+.site-nav svg {
+    height: 1em;
+    width: 1em;
+    vertical-align: -0.125em;
+}
+
+.site-footer {
+    padding: 1.5rem 0 2.5rem;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: #64748b;
+}
+
+.site-footer p {
+    margin: 0;
+}
+

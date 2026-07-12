@@ -38,7 +38,10 @@ extra_bold = re.compile(r"</b>.*?<b>", re.MULTILINE)
 
 @app.context_processor
 def inject_globals():
-    return {"ga_measurement_id": GA_MEASUREMENT_ID}
+    return {
+        "ga_measurement_id": GA_MEASUREMENT_ID,
+        "current_year": datetime.now().year,
+    }
 
 
 # --------------------------------------------------------------------

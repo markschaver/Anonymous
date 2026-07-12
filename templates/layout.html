@@ -4,17 +4,7 @@
    only — never serve this app dynamically to untrusted clients. #}
 <html lang="en">
 <head>
-    {% if ga_measurement_id %}
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_measurement_id }}"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', '{{ ga_measurement_id }}');
-    </script>
-    {% endif %}
+    {% include "_ga.html" %}
     {% block head %}{% endblock %}
     <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
     <meta name="description" content="{% block description %}Anonymous Source Tracker: Examples of how major English-language news organizations use anonymous sources. Updated daily.{% endblock %}" />
@@ -28,6 +18,7 @@
 
 </head>
 <body>
+    {% include "_site_header.html" %}
     <div class="jumbotron">
         <div class="container">
         {% block masthead %}{% endblock %}
@@ -60,6 +51,7 @@
             </div>
         </div><!-- row -->
     </div> <!-- container -->
+    {% include "_site_footer.html" %}
 </body>
 </html>
 

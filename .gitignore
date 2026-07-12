@@ -21,3 +21,6 @@ Anonymous.sublime-workspace
 anon.db
 invalid-dates.log
 json/*.json
+
+# Claude Code local settings
+.claude/settings.local.json

@@ -1,17 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-    {% if ga_measurement_id %}
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_measurement_id }}"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', '{{ ga_measurement_id }}');
-    </script>
-    {% endif %}
+    {% include "_ga.html" %}
     <title>Anonymous Source Tracker | {{ masthead|safe }} | {{ results.title|safe }}</title>
     <meta name="description" content="Anonymous Source Tracker: Examples of how major English-language news organizations use anonymous sources. Updated daily." />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -24,6 +14,7 @@
 
 </head>
 <body>
+    {% include "_site_header.html" %}
     <div class="jumbotron">
         <div class="container">
         <h2><a href="{{ url_for('index') }}" id="masthed">Anonymous Source Tracker</a></h2>
@@ -45,6 +36,7 @@
             </div>
         </div><!-- row -->
     </div> <!-- container -->
+    {% include "_site_footer.html" %}
 </body>
 </html>
 
