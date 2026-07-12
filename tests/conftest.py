@@ -35,7 +35,11 @@ def flask_app():
     # context processor, so these values win.
     @app_module.app.context_processor
     def _pin_snapshot_globals():
-        return {"ga_measurement_id": "G-TEST123456", "current_year": 2026}
+        return {
+            "ga_measurement_id": "G-TEST123456",
+            "current_year": 2026,
+            "css_version": 1,
+        }
 
     return app_module.app
 

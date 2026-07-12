@@ -25,6 +25,13 @@ GA_MEASUREMENT_ID = os.environ.get(
     "ANON_GA_ID",
     config.get("Configuration", "ga_id", fallback=""),
 )
+# Cache-busting version for custom.css: derived from the file's mtime so
+# browsers refetch it only when the stylesheet actually changes.
+CSS_VERSION = int(
+    os.path.getmtime(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "custom.css")
+    )
+)
 
 
 app = Flask(__name__)
@@ -41,6 +48,7 @@ def inject_globals():
     return {
         "ga_measurement_id": GA_MEASUREMENT_ID,
         "current_year": datetime.now().year,
+        "css_version": CSS_VERSION,
     }
 
 
