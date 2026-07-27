@@ -135,10 +135,94 @@ a:hover#masthed {
     margin-left: 0;
 }
 
-.site-nav svg {
+/* Every svg in the header is an icon: nav bar, hamburger, close, overlay. */
+.site-header svg {
     height: 1em;
     width: 1em;
     vertical-align: -0.125em;
+}
+
+/* Hamburger menu: hidden on desktop, replaces the nav bar below 640px
+   (Congo's "sm" breakpoint). Driven by a checkbox, so it needs no JS. */
+.site-menu-controller {
+    /* Off-screen rather than display:none so it stays keyboard-focusable. */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.site-menu-button,
+.site-menu-overlay {
+    display: none;
+}
+
+@media (max-width: 639px) {
+    .site-nav {
+        display: none;
+    }
+
+    .site-menu-button {
+        display: block;
+        cursor: pointer;
+        font-size: 27px;
+        line-height: 36px;
+        padding: 0 4px;
+    }
+
+    .site-menu-controller:focus-visible ~ .site-menu-button {
+        outline: 2px solid #3b82f6;
+        outline-offset: 2px;
+    }
+
+    .site-menu-controller:checked ~ .site-menu-button {
+        visibility: hidden;
+    }
+
+    .site-menu-overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        overflow: auto;
+        cursor: default;
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 0.15s ease-in-out;
+        background-color: rgba(241, 245, 249, 0.5);
+        -webkit-backdrop-filter: blur(4px);
+        backdrop-filter: blur(4px);
+    }
+
+    .site-menu-controller:checked ~ .site-menu-overlay {
+        visibility: visible;
+        opacity: 1;
+    }
+
+    .site-menu-panel {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        padding: 1.5rem;
+    }
+
+    .site-menu-panel > * {
+        margin-bottom: 0.25rem;
+    }
+
+    .site-menu-close {
+        cursor: pointer;
+        font-size: 27px;
+        line-height: 36px;
+        padding: 0 4px;
+    }
+
+    /* Keep the page behind the overlay from scrolling while it is open. */
+    body:has(.site-menu-controller:checked) {
+        height: 100vh;
+        overflow: hidden;
+    }
 }
 
 .site-footer {
