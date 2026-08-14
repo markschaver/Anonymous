@@ -1,7 +1,7 @@
 from flask import Flask, render_template, g, current_app, request
 from flask_paginate import Pagination
 from sqlite3 import connect
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import re
 import urllib
@@ -34,6 +34,38 @@ CSS_VERSION = int(
 )
 
 
+# --------------------------------------------------------------------
+# PUBLISH WINDOW
+# --------------------------------------------------------------------
+# The site publishes only recently published articles. anon.db keeps the
+# full archive untouched; this limits only what is queried, rendered and
+# frozen, which also keeps the frozen output small.
+WINDOW_DAYS = int(os.environ.get("ANON_WINDOW_DAYS", "30"))
+
+# Which column defines "recent":
+#   date_published - the article's own publication date (default)
+#   date_entered   - when the tracker collected the example
+# Filtering on date_published means an old article found today is stored
+# but never shown; filtering on date_entered would show it, dated to its
+# original publication.
+# Interpolated into SQL, so it is checked against an allowlist.
+WINDOW_COLUMN = os.environ.get("ANON_WINDOW_COLUMN", "date_published")
+if WINDOW_COLUMN not in ("date_entered", "date_published"):
+    raise ValueError(
+        f"ANON_WINDOW_COLUMN must be date_entered or date_published, "
+        f"got {WINDOW_COLUMN!r}"
+    )
+
+
+def window_start():
+    """First date (inclusive) the published site covers, as YYYY-MM-DD.
+
+    Both date columns are ISO-formatted TEXT, so a string comparison
+    orders them correctly.
+    """
+    return (datetime.now() - timedelta(days=WINDOW_DAYS)).strftime("%Y-%m-%d")
+
+
 app = Flask(__name__)
 app.config['FREEZER_DESTINATION'] = FREEZER_DESTINATION
 app.config.from_object(__name__)
@@ -55,18 +87,31 @@ def inject_globals():
 # --------------------------------------------------------------------
 # SQL
 # --------------------------------------------------------------------
+# Every published query is scoped to the window; the leading '?' in each
+# statement below binds the cutoff from window_start().
+_WINDOW = f"anon.{WINDOW_COLUMN} >= ?"
+
 ENTRIES_SELECT = (
     "SELECT anon.source, outlets.name, anon.phrase, anon.title, "
     "anon.link, anon.content, anon.date_published "
-    "FROM anon LEFT OUTER JOIN outlets ON anon.source = outlets.url"
+    "FROM anon LEFT OUTER JOIN outlets ON anon.source = outlets.url "
+    f"WHERE {_WINDOW}"
 )
+ENTRIES_BY_SOURCE = f"{ENTRIES_SELECT} AND anon.source = ?"
 OUTLETS_IN_USE = (
     "SELECT DISTINCT outlets.name, outlets.url "
     "FROM outlets JOIN anon ON outlets.url = anon.source "
-    "ORDER BY outlets.name"
+    f"WHERE {_WINDOW} ORDER BY outlets.name"
 )
-COUNT_ANON = "SELECT count(*) AS n FROM anon"
-COUNT_ANON_BY_SOURCE = "SELECT count(*) AS n FROM anon WHERE source = ?"
+# Only outlets with entries in the window; outlets that have gone quiet
+# get no pages at all rather than empty ones.
+OUTLET_URLS_IN_USE = (
+    "SELECT DISTINCT outlets.url "
+    "FROM outlets JOIN anon ON outlets.url = anon.source "
+    f"WHERE {_WINDOW} ORDER BY outlets.url"
+)
+COUNT_ANON = f"SELECT count(*) AS n FROM anon WHERE {_WINDOW}"
+COUNT_ANON_BY_SOURCE = f"{COUNT_ANON} AND anon.source = ?"
 
 
 # --------------------------------------------------------------------
@@ -125,21 +170,21 @@ def get_page_info(source, pub_date, title):
 
 def get_outlet_urls():
     g.db = connect_db()
-    urls = query_db("SELECT DISTINCT url FROM outlets ORDER BY url")
+    urls = query_db(OUTLET_URLS_IN_USE, (window_start(),))
     g.db.close()
     return urls
 
 
 def get_total_anon_pages():
     g.db = connect_db()
-    results = query_db(COUNT_ANON, one=True)
+    results = query_db(COUNT_ANON, (window_start(),), one=True)
     g.db.close()
     return math.ceil(results['n'] / PER_PAGE)
 
 
 def get_total_outlet_pages(outlet_url):
     g.db = connect_db()
-    results = query_db(COUNT_ANON_BY_SOURCE, (outlet_url,), one=True)
+    results = query_db(COUNT_ANON_BY_SOURCE, (window_start(), outlet_url), one=True)
     g.db.close()
     return math.ceil(results['n'] / PER_PAGE)
 
@@ -232,12 +277,13 @@ def outlet_pages():
 @app.route('/page/<int:page>/')
 def index(page):
     page, per_page, offset = get_page_items(page)
-    total = query_db(COUNT_ANON, one=True)
+    cutoff = window_start()
+    total = query_db(COUNT_ANON, (cutoff,), one=True)
     results = query_db(
-        f"{ENTRIES_SELECT} ORDER BY date_published DESC LIMIT ?, ?",
-        (offset, per_page),
+        f"{ENTRIES_SELECT} ORDER BY anon.date_published DESC LIMIT ?, ?",
+        (cutoff, offset, per_page),
     )
-    outlets = query_db(OUTLETS_IN_USE)
+    outlets = query_db(OUTLETS_IN_USE, (cutoff,))
     pagination = get_pagination(
         page=page,
         per_page=per_page,
@@ -275,13 +321,13 @@ def outlet(outlet_name, page):
     masthead = parse.unquote_plus(outlet_name)
     outlet_url = get_outlet_url(outlet_name)
     page, per_page, offset = get_page_items(page)
-    total = query_db(COUNT_ANON_BY_SOURCE, (outlet_url,), one=True)
+    cutoff = window_start()
+    total = query_db(COUNT_ANON_BY_SOURCE, (cutoff, outlet_url), one=True)
     results = query_db(
-        f"{ENTRIES_SELECT} WHERE anon.source = ? "
-        "ORDER BY anon.date_published DESC LIMIT ?, ?",
-        (outlet_url, offset, per_page),
+        f"{ENTRIES_BY_SOURCE} ORDER BY anon.date_published DESC LIMIT ?, ?",
+        (cutoff, outlet_url, offset, per_page),
     )
-    outlets = query_db(OUTLETS_IN_USE)
+    outlets = query_db(OUTLETS_IN_USE, (cutoff,))
     pagination = get_pagination(
         page=page,
         per_page=per_page,

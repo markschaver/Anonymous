@@ -51,31 +51,44 @@ def client(flask_app):
 
 @pytest.fixture(scope="session")
 def sample_outlet():
-    """Pick a deterministic outlet that has at least 2 pages of results."""
+    """Pick a deterministic outlet with at least 2 full pages inside the window.
+
+    Scoped to the publish window so the outlet actually has a page 2 in the
+    generated site, not just in the archive.
+    """
+    import app as app_module
+
     conn = sqlite3.connect(os.path.join(PROJECT_ROOT, "anon.db"))
     cur = conn.cursor()
     cur.execute(
         "SELECT o.name, o.url, COUNT(a.source) AS n "
         "FROM outlets o JOIN anon a ON a.source = o.url "
-        "GROUP BY o.url HAVING n > 30 ORDER BY o.name LIMIT 1"
+        f"WHERE a.{app_module.WINDOW_COLUMN} >= ? "
+        "GROUP BY o.url HAVING n > ? ORDER BY o.name LIMIT 1",
+        (app_module.window_start(), app_module.PER_PAGE),
     )
     row = cur.fetchone()
     conn.close()
-    assert row is not None, "Need at least one outlet with >30 anon rows"
+    assert row is not None, (
+        f"Need an outlet with more than {app_module.PER_PAGE} rows inside the "
+        f"{app_module.WINDOW_DAYS}-day window"
+    )
     name, url, _ = row
     return {"name": name, "url": url, "name_encoded": quote_plus(name)}
 
 
 @pytest.fixture(scope="session")
 def sample_article(sample_outlet):
-    """Pick a deterministic article row for the chosen outlet."""
+    """Pick a deterministic in-window article row for the chosen outlet."""
+    import app as app_module
+
     conn = sqlite3.connect(os.path.join(PROJECT_ROOT, "anon.db"))
     cur = conn.cursor()
     cur.execute(
         "SELECT source, title, date_published FROM anon "
-        "WHERE source = ? AND date_published IS NOT NULL "
+        f"WHERE source = ? AND date_published IS NOT NULL AND {app_module.WINDOW_COLUMN} >= ? "
         "ORDER BY date_published DESC, title LIMIT 1",
-        (sample_outlet["url"],),
+        (sample_outlet["url"], app_module.window_start()),
     )
     row = cur.fetchone()
     conn.close()
